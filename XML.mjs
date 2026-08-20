@@ -331,11 +331,21 @@ export default class XML {
 			function addObject(object, key, val, prevKey = key) {
 				if (typeof val === "undefined") return;
 				else {
-					const prev = object[prevKey];
+					const hasPrevious = prevKey !== undefined && Object.prototype.hasOwnProperty.call(object, prevKey);
+					const prev = hasPrevious ? object[prevKey] : undefined;
 					//const curr = object[key];
 					if (Array.isArray(prev)) prev.push(val);
-					else if (prev !== undefined) object[prevKey] = [prev, val];
-					else object[key] = val;
+					else if (hasPrevious) setObjectValue(object, prevKey, [prev, val]);
+					else setObjectValue(object, key, val);
+				}
+
+				function setObjectValue(object, key, value) {
+					Object.defineProperty(object, key, {
+						configurable: true,
+						enumerable: true,
+						value,
+						writable: true,
+					});
 				}
 			}
 		}
@@ -356,7 +366,7 @@ export default class XML {
 		const ATTRIBUTE_KEY = this.#ATTRIBUTE_KEY;
 		const CHILD_NODE_KEY = this.#CHILD_NODE_KEY;
 		let XML = "";
-		for (const elem in json) XML += toXml(json[elem], elem, "");
+		for (const elem of Object.keys(json)) XML += toXml(json[elem], elem, "");
 		XML = tab ? XML.replace(/\t/g, tab) : XML.replace(/\t|\n/g, "");
 		return XML;
 		/***************** Fuctions *****************/
@@ -369,7 +379,7 @@ export default class XML {
 					} else {
 						let attribute = "";
 						let hasChild = false;
-						for (const name in Elem) {
+						for (const name of Object.keys(Elem)) {
 							if (name[0] === ATTRIBUTE_KEY) {
 								attribute += Elem[name] === null ? ` ${name.substring(1)}` : ` ${name.substring(1)}="${escapeXML(Elem[name] ?? "")}"`;
 							} else if (Elem[name] === undefined) Name = name;
@@ -384,7 +394,7 @@ export default class XML {
 								if (order) {
 									for (const [name, value] of order) xml += toXml(value, name, `${Ind}\t`);
 								} else {
-									for (const name in Elem) {
+									for (const name of Object.keys(Elem)) {
 										if (name[0] === ATTRIBUTE_KEY) continue;
 										switch (name) {
 											case CHILD_NODE_KEY:

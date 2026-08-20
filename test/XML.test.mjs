@@ -86,3 +86,13 @@ test("preserves mixed text order and duplicate empty values", () => {
 	assert.equal(XML.stringify(parsed), xml);
 	assert.deepEqual(XML.parse("<root><![CDATA[]]><![CDATA[]]></root>"), { root: { "!CDATA": ["", ""] } });
 });
+
+test("keeps prototype-looking XML names as data", () => {
+	const parsed = XML.parse("<root><constructor>evil</constructor><toString>value</toString><__proto__><polluted>true</polluted></__proto__></root>");
+
+	assert.equal(Object.getPrototypeOf(parsed.root), Object.prototype);
+	assert.equal(parsed.root.constructor["#"], "evil");
+	assert.equal(parsed.root.toString["#"], "value");
+	assert.equal(parsed.root.__proto__.polluted["#"], "true");
+	assert.equal(Object.prototype.polluted, undefined);
+});
