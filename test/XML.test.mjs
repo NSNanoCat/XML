@@ -76,3 +76,13 @@ test("parses empty and multiline comments and CDATA", () => {
 test("decodes Unicode code point entities", () => {
 	assert.deepEqual(XML.parse("<root>&#x1F600;&#128512;</root>"), { root: { "#": "😀😀" } });
 });
+
+test("preserves mixed text order and duplicate empty values", () => {
+	const xml = "<root>one<child/>two</root>";
+	const parsed = XML.parse(xml);
+
+	assert.deepEqual(parsed.root["#"], ["one", "two"]);
+	assert.ok(parsed.root.child);
+	assert.equal(XML.stringify(parsed), xml);
+	assert.deepEqual(XML.parse("<root><![CDATA[]]><![CDATA[]]></root>"), { root: { "!CDATA": ["", ""] } });
+});

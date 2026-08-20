@@ -1,5 +1,7 @@
 // refer: https://github.com/Peng-YM/QuanX/blob/master/Tools/XMLParser/xml-parser.js
 // refer: https://goessner.net/download/prj/jsonxml/
+const XML_ORDER = Symbol("XML_ORDER");
+
 export default class XML {
 	static name = "XML";
 	static version = "0.4.3";
@@ -230,6 +232,7 @@ export default class XML {
 
 		function fromXML(elem, reviver) {
 			let object;
+			const order = [];
 			switch (typeof elem) {
 				case "string":
 				case "undefined":
@@ -250,12 +253,18 @@ export default class XML {
 					if (name === "plist") object = Object.assign(object, fromPlist(children[0], reviver));
 					else
 						children?.forEach?.((child, i) => {
-							if (typeof child === "string") addObject(object, CHILD_NODE_KEY, fromXML(child, reviver), undefined);
-							else if (child.raw !== undefined) addObject(object, child.name, fromXML(child, reviver), undefined);
-							else if (!child.tag && !child.children && !child.raw) addObject(object, child.name, fromXML(child, reviver), children?.[i - 1]?.name);
-							else addObject(object, child.name, fromXML(child, reviver), undefined);
+							const value = fromXML(child, reviver);
+							if (typeof child === "string") {
+								addObject(object, CHILD_NODE_KEY, value, undefined);
+								order.push([CHILD_NODE_KEY, value]);
+							} else {
+								const prevKey = child.raw !== undefined || child.tag || child.children ? undefined : children?.[i - 1]?.name;
+								addObject(object, child.name, value, prevKey);
+								order.push([child.name, value]);
+							}
 						});
 					if (children && children.length === 0) addObject(object, CHILD_NODE_KEY, null, undefined);
+					if (order.length) Object.defineProperty(object, XML_ORDER, { value: order });
 					/*
 					if (Object.keys(object).length === 0) {
 						if (elem.name) object[elem.name] = (elem.hasChild === false) ? null : "";
@@ -325,7 +334,7 @@ export default class XML {
 					const prev = object[prevKey];
 					//const curr = object[key];
 					if (Array.isArray(prev)) prev.push(val);
-					else if (prev) object[prevKey] = [prev, val];
+					else if (prev !== undefined) object[prevKey] = [prev, val];
 					else object[key] = val;
 				}
 			}
@@ -371,15 +380,20 @@ export default class XML {
 						if (hasChild) {
 							if (Name === "plist") xml += toPlist(Elem, Name, `${Ind}\t`);
 							else {
-								for (const name in Elem) {
-									if (name[0] === ATTRIBUTE_KEY) continue;
-									switch (name) {
-										case CHILD_NODE_KEY:
-											xml += escapeXML(Elem[name] ?? "");
-											break;
-										default:
-											xml += toXml(Elem[name], name, `${Ind}\t`);
-											break;
+								const order = Elem[XML_ORDER];
+								if (order) {
+									for (const [name, value] of order) xml += toXml(value, name, `${Ind}\t`);
+								} else {
+									for (const name in Elem) {
+										if (name[0] === ATTRIBUTE_KEY) continue;
+										switch (name) {
+											case CHILD_NODE_KEY:
+												xml += Array.isArray(Elem[name]) ? Elem[name].map(escapeXML).join("") : escapeXML(Elem[name] ?? "");
+												break;
+											default:
+												xml += toXml(Elem[name], name, `${Ind}\t`);
+												break;
+										}
 									}
 								}
 							}
