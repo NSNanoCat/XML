@@ -25,8 +25,8 @@
 	"main": "XML.mjs",
 	"types": "XML.d.mts",
 	"scripts": {
-		"format": "biome format --write XML.mjs XML.d.mts test package.json package-lock.json biome.json",
-		"lint": "biome check XML.mjs XML.d.mts test package.json package-lock.json biome.json",
+		"format": "biome format --write XML.mjs XML.d.mts test package.json package-lock.json tsconfig.json biome.json",
+		"lint": "biome check XML.mjs XML.d.mts test package.json package-lock.json tsconfig.json biome.json",
 		"check": "npm run lint && npm test && npm run typecheck && npm pack --dry-run",
 		"test": "node --test test/*.test.mjs",
 		"typecheck": "tsc --noEmit --project tsconfig.json"

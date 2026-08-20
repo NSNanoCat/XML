@@ -16,6 +16,8 @@ npm install @nsnanocat/xml
 
 ```sh
 npm config set @nsnanocat:registry https://npm.pkg.github.com
+# GitHub Packages requires a token with package read access.
+# echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_PAT" >> ~/.npmrc
 npm install @nsnanocat/xml
 ```
 
@@ -58,7 +60,11 @@ Print the package name and version.
 Published package entry point: `XML.mjs`. `XML.beta.mjs` stays in the repo as the verbose beta build.
 
 ```sh
+npm run format
+npm run lint
 npm test
+npm run typecheck
+npm run check
 npm pack --dry-run
 ```
 
