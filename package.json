@@ -27,8 +27,9 @@
 	"scripts": {
 		"format": "biome format --write XML.mjs XML.d.mts test package.json package-lock.json biome.json",
 		"lint": "biome check XML.mjs XML.d.mts test package.json package-lock.json biome.json",
-		"check": "npm run lint && npm test && npm pack --dry-run",
-		"test": "node --test test/*.test.mjs"
+		"check": "npm run lint && npm test && npm run typecheck && npm pack --dry-run",
+		"test": "node --test test/*.test.mjs",
+		"typecheck": "tsc --noEmit --project tsconfig.json"
 	},
 	"repository": {
 		"type": "git",
@@ -41,7 +42,8 @@
 		"LICENSE"
 	],
 	"devDependencies": {
-		"@biomejs/biome": "2.4.6"
+		"@biomejs/biome": "2.4.6",
+		"typescript": "^5.9.3"
 	},
 	"publishConfig": {
 		"registry": "https://registry.npmjs.org/",
