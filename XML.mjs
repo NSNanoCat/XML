@@ -105,16 +105,8 @@ export default class XML {
 								delete child.children; // emptyTag
 								break;
 							default:
-								switch (name) {
-									case "link":
-										//child.hasChild = false; // emptyTag
-										delete child.children; // emptyTag
-										break;
-									default:
-										stack.push(elem); // openTag
-										elem = child;
-										break;
-								}
+								stack.push(elem); // openTag
+								elem = child;
 								break;
 						}
 						break;
@@ -385,7 +377,7 @@ export default class XML {
 							} else if (Elem[name] === undefined) Name = name;
 							else hasChild = true;
 						}
-						xml += `${Ind}<${Name}${attribute}${hasChild || Name === "link" ? "" : "/"}>`;
+						xml += `${Ind}<${Name}${attribute}${hasChild ? "" : "/"}>`;
 
 						if (hasChild) {
 							if (Name === "plist") xml += toPlist(Elem, Name, `${Ind}\t`);

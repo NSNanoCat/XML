@@ -96,3 +96,11 @@ test("keeps prototype-looking XML names as data", () => {
 	assert.equal(parsed.root.__proto__.polluted["#"], "true");
 	assert.equal(Object.prototype.polluted, undefined);
 });
+
+test("treats link as an ordinary XML element", () => {
+	const xml = "<root><link>text</link></root>";
+	const parsed = XML.parse(xml);
+
+	assert.equal(parsed.root.link["#"], "text");
+	assert.equal(XML.stringify(parsed), xml);
+});
