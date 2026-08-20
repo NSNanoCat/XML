@@ -4,7 +4,7 @@ const XML_ORDER = Symbol("XML_ORDER");
 
 export default class XML {
 	static name = "XML";
-	static version = "0.4.3";
+	static version = "0.4.4";
 	static about = () => console.log(`\n🟧 ${this.name} v${this.version}\n`);
 
 	static #ATTRIBUTE_KEY = "@";

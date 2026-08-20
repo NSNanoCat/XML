@@ -1,6 +1,6 @@
 {
 	"name": "@nsnanocat/xml",
-	"version": "0.4.3",
+	"version": "0.4.4",
 	"description": "XML / JSON converter with plist support for JavaScriptCore and Node.js",
 	"author": "VirgilClyne <Virgil@nanocat.me>",
 	"homepage": "https://github.com/NSNanoCat/XML",
