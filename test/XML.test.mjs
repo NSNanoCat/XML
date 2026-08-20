@@ -53,3 +53,26 @@ test("escapes serialized text, attributes, and plist strings without mutating in
 	assert.equal(XML.stringify(value), '<root attribute="a &amp; &lt; &gt; &quot; &apos;">a &amp; &lt; &gt; &quot; &apos;</root><plist><dict><key>a&amp;b</key><string>x &amp; &lt; &gt; &quot; &apos;</string></dict></plist>');
 	assert.deepEqual(value, snapshot);
 });
+
+test("round-trips bare attributes", () => {
+	const xml = "<root disabled/>";
+	const parsed = XML.parse(xml);
+
+	assert.deepEqual(parsed, { root: { "@disabled": null } });
+	assert.equal(XML.stringify(parsed), xml);
+});
+
+test("parses empty and multiline comments and CDATA", () => {
+	const parsed = XML.parse("<root><!--line1\nline2--><![CDATA[line1\nline2]]><![CDATA[]]><!----></root>");
+
+	assert.deepEqual(parsed, {
+		root: {
+			"!--": ["line1\nline2", ""],
+			"!CDATA": ["line1\nline2", ""],
+		},
+	});
+});
+
+test("decodes Unicode code point entities", () => {
+	assert.deepEqual(XML.parse("<root>&#x1F600;&#128512;</root>"), { root: { "#": "😀😀" } });
+});

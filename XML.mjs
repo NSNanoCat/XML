@@ -77,16 +77,16 @@ export default class XML {
 						appendChild(child);
 						break;
 					case "!":
-						if (/!\[CDATA\[(.+)\]\]/.test(tag)) {
+						if (/!\[CDATA\[([\s\S]*?)\]\]/.test(tag)) {
 							// CDATA section
 							child.name = "!CDATA";
 							//child.raw = tag.slice(9, -2);
-							child.raw = tag.match(/!\[CDATA\[(?<raw>.+)\]\]/)?.groups?.raw;
+							child.raw = tag.match(/!\[CDATA\[(?<raw>[\s\S]*?)\]\]/)?.groups?.raw;
 							//appendText(tag.slice(9, -2));
-						} else if (/!--(.+)--/.test(tag)) {
+						} else if (/!--([\s\S]*?)--/.test(tag)) {
 							// Comment section
 							child.name = "!--";
-							child.raw = tag.match(/!--(?<raw>.+)--/)?.groups?.raw;
+							child.raw = tag.match(/!--(?<raw>[\s\S]*?)--/)?.groups?.raw;
 						} else {
 							// Comment section
 							child.name = name;
@@ -242,7 +242,7 @@ export default class XML {
 					const tag = elem.tag;
 					const children = elem.children;
 
-					if (raw) object = raw;
+					if (raw !== undefined) object = raw;
 					else if (tag) object = parseAttribute(tag, reviver);
 					else if (!children) object = { [name]: undefined };
 					else object = {};
@@ -251,6 +251,7 @@ export default class XML {
 					else
 						children?.forEach?.((child, i) => {
 							if (typeof child === "string") addObject(object, CHILD_NODE_KEY, fromXML(child, reviver), undefined);
+							else if (child.raw !== undefined) addObject(object, child.name, fromXML(child, reviver), undefined);
 							else if (!child.tag && !child.children && !child.raw) addObject(object, child.name, fromXML(child, reviver), children?.[i - 1]?.name);
 							else addObject(object, child.name, fromXML(child, reviver), undefined);
 						});
@@ -331,10 +332,10 @@ export default class XML {
 		}
 
 		function unescapeXML(str) {
-			return str.replace(/(&(?:lt|gt|amp|apos|quot|#(?:\d{1,6}|x[0-9a-fA-F]{1,5}));)/g, str => {
+			return str.replace(/(&(?:lt|gt|amp|apos|quot|#(?:\d{1,7}|x[0-9a-fA-F]{1,6}));)/g, str => {
 				if (str[1] === "#") {
 					const code = str[2] === "x" ? Number.parseInt(str.substr(3), 16) : Number.parseInt(str.substr(2), 10);
-					if (code > -1) return String.fromCharCode(code);
+					if (code >= 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff)) return String.fromCodePoint(code);
 				}
 				return UNESCAPE[str] || str;
 			});
@@ -361,7 +362,7 @@ export default class XML {
 						let hasChild = false;
 						for (const name in Elem) {
 							if (name[0] === ATTRIBUTE_KEY) {
-								attribute += ` ${name.substring(1)}="${escapeXML(Elem[name] ?? "")}"`;
+								attribute += Elem[name] === null ? ` ${name.substring(1)}` : ` ${name.substring(1)}="${escapeXML(Elem[name] ?? "")}"`;
 							} else if (Elem[name] === undefined) Name = name;
 							else hasChild = true;
 						}
