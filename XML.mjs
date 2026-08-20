@@ -4,7 +4,7 @@ export default class XML {
 	static name = "XML";
 	static version = "0.4.2";
 	static about = () => console.log(`\n🟧 ${this.name} v${this.version}\n`);
-	
+
 	static #ATTRIBUTE_KEY = "@";
 	static #CHILD_NODE_KEY = "#";
 	static #UNESCAPE = {
@@ -12,28 +12,27 @@ export default class XML {
 		"&lt;": "<",
 		"&gt;": ">",
 		"&apos;": "'",
-		"&quot;": '"'
+		"&quot;": '"',
 	};
 	static #ESCAPE = {
 		"&": "&amp;",
 		"<": "&lt;",
 		">": "&gt;",
 		"'": "&apos;",
-		'"': "&quot;"
+		'"': "&quot;",
 	};
 
-	static parse(xml = new String, reviver = "") {
+	static parse(xml = new String(), reviver = "") {
 		const UNESCAPE = this.#UNESCAPE;
 		const ATTRIBUTE_KEY = this.#ATTRIBUTE_KEY;
 		const CHILD_NODE_KEY = this.#CHILD_NODE_KEY;
 		const DOM = toDOM(xml);
-		let json = fromXML(DOM, reviver);
+		const json = fromXML(DOM, reviver);
 		return json;
 
 		/***************** Fuctions *****************/
 		function toDOM(text) {
-			const list = text.replace(/^[ \t]+/gm, "")
-				.split(/<([^!<>?](?:'[\S\s]*?'|"[\S\s]*?"|[^'"<>])*|!(?:--[\S\s]*?--|\[[^\[\]'"<>]+\[[\S\s]*?]]|DOCTYPE[^\[<>]*?\[[\S\s]*?]|(?:ENTITY[^"<>]*?"[\S\s]*?")?[\S\s]*?)|\?[\S\s]*?\?)>/);
+			const list = text.replace(/^[ \t]+/gm, "").split(/<([^!<>?](?:'[\S\s]*?'|"[\S\s]*?"|[^'"<>])*|!(?:--[\S\s]*?--|\[[^[\]'"<>]+\[[\S\s]*?]]|DOCTYPE[^[<>]*?\[[\S\s]*?]|(?:ENTITY[^"<>]*?"[\S\s]*?")?[\S\s]*?)|\?[\S\s]*?\?)>/);
 			const length = list.length;
 
 			// root element
@@ -44,7 +43,7 @@ export default class XML {
 			const stack = [];
 
 			// parse
-			for (let i = 0; i < length;) {
+			for (let i = 0; i < length; ) {
 				// text node
 				const str = list[i++];
 				if (str) appendText(str);
@@ -61,15 +60,16 @@ export default class XML {
 				const length = tags.length;
 				let child = {};
 				switch (name[0]) {
-					case "/":
+					case "/": {
 						// close tag
-						const closed = tag.replace(/^\/|[\s\/].*$/g, "").toLowerCase();
+						const closed = tag.replace(/^\/|[\s/].*$/g, "").toLowerCase();
 						while (stack.length) {
 							const tagName = elem?.name?.toLowerCase?.();
 							elem = stack.pop();
 							if (tagName === closed) break;
 						}
 						break;
+					}
 					case "?":
 						// XML declaration
 						child.name = name;
@@ -91,7 +91,7 @@ export default class XML {
 							// Comment section
 							child.name = name;
 							child.raw = tags.join(" ");
-						};
+						}
 						appendChild(child);
 						break;
 					default:
@@ -112,16 +112,16 @@ export default class XML {
 										stack.push(elem); // openTag
 										elem = child;
 										break;
-								};
+								}
 								break;
-						};
+						}
 						break;
-				};
+				}
 
 				function openTag(tag) {
 					const elem = { children: [] };
 					tag = tag.replace(/\s*\/?$/, "");
-					const pos = tag.search(/[\s='"\/]/);
+					const pos = tag.search(/[\s='"/]/);
 					if (pos < 0) {
 						elem.name = tag;
 					} else {
@@ -129,8 +129,8 @@ export default class XML {
 						elem.tag = tag.substr(pos);
 					}
 					return elem;
-				};
-			};
+				}
+			}
 
 			function appendText(str) {
 				//str = removeSpaces(str);
@@ -146,7 +146,7 @@ export default class XML {
 			function appendChild(child) {
 				elem.children.push(child);
 			}
-		};
+		}
 		/***************** Fuctions *****************/
 		function fromPlist(elem, reviver) {
 			let object;
@@ -155,7 +155,7 @@ export default class XML {
 				case "undefined":
 					object = elem;
 					break;
-				case "object":
+				case "object": {
 					//default:
 					const name = elem.name;
 					const children = elem.children;
@@ -163,49 +163,57 @@ export default class XML {
 					object = {};
 
 					switch (name) {
-						case "plist":
-							let plist = fromPlist(children[0], reviver);
-							object = Object.assign(object, plist)
+						case "plist": {
+							const plist = fromPlist(children[0], reviver);
+							object = Object.assign(object, plist);
 							break;
-						case "dict":
+						}
+						case "dict": {
 							let dict = children.map(child => fromPlist(child, reviver));
 							dict = chunk(dict, 2);
 							object = Object.fromEntries(dict);
 							break;
+						}
 						case "array":
 							if (!Array.isArray(object)) object = [];
 							object = children.map(child => fromPlist(child, reviver));
 							break;
-						case "key":
+						case "key": {
 							const key = children[0];
 							object = key;
 							break;
+						}
 						case "true":
-						case "false":
+						case "false": {
 							const boolean = name;
 							object = JSON.parse(boolean);
 							break;
-						case "integer":
+						}
+						case "integer": {
 							const integer = children[0];
 							//object = parseInt(integer);
 							object = BigInt(integer);
 							break;
-						case "real":
+						}
+						case "real": {
 							const real = children[0];
 							//const digits = real.split(".")[1]?.length || 0;
-							object = parseFloat(real)//.toFixed(digits);
+							object = Number.parseFloat(real); //.toFixed(digits);
 							break;
-						case "string":
+						}
+						case "string": {
 							const string = children[0];
 							object = string;
 							break;
-					};
+						}
+					}
 					if (reviver) object = reviver(name || "", object);
 					break;
+				}
 			}
 			return object;
 
-			/** 
+			/**
 			 * Chunk Array
 			 * @author VirgilClyne
 			 * @param {Array} source - source
@@ -213,10 +221,11 @@ export default class XML {
 			 * @return {Array<*>} target
 			 */
 			function chunk(source, length) {
-				var index = 0, target = [];
-				while (index < source.length) target.push(source.slice(index, index += length));
+				var index = 0,
+					target = [];
+				while (index < source.length) target.push(source.slice(index, (index += length)));
 				return target;
-			};
+			}
 		}
 
 		function fromXML(elem, reviver) {
@@ -226,7 +235,7 @@ export default class XML {
 				case "undefined":
 					object = elem;
 					break;
-				case "object":
+				case "object": {
 					//default:
 					const raw = elem.raw;
 					const name = elem.name;
@@ -239,11 +248,12 @@ export default class XML {
 					else object = {};
 
 					if (name === "plist") object = Object.assign(object, fromPlist(children[0], reviver));
-					else children?.forEach?.((child, i) => {
-						if (typeof child === "string") addObject(object, CHILD_NODE_KEY, fromXML(child, reviver), undefined)
-						else if (!child.tag && !child.children && !child.raw) addObject(object, child.name, fromXML(child, reviver), children?.[i - 1]?.name)
-						else addObject(object, child.name, fromXML(child, reviver), undefined)
-					});
+					else
+						children?.forEach?.((child, i) => {
+							if (typeof child === "string") addObject(object, CHILD_NODE_KEY, fromXML(child, reviver), undefined);
+							else if (!child.tag && !child.children && !child.raw) addObject(object, child.name, fromXML(child, reviver), children?.[i - 1]?.name);
+							else addObject(object, child.name, fromXML(child, reviver), undefined);
+						});
 					if (children && children.length === 0) addObject(object, CHILD_NODE_KEY, null, undefined);
 					/*
 					if (Object.keys(object).length === 0) {
@@ -256,6 +266,7 @@ export default class XML {
 					//if (Object.keys(object).length === 0) object = (elem.hasChild === false) ? undefined : "";
 					if (reviver) object = reviver(name || "", object);
 					break;
+				}
 			}
 			return object;
 			/***************** Fuctions *****************/
@@ -320,23 +331,22 @@ export default class XML {
 		}
 
 		function unescapeXML(str) {
-			return str.replace(/(&(?:lt|gt|amp|apos|quot|#(?:\d{1,6}|x[0-9a-fA-F]{1,5}));)/g, function (str) {
+			return str.replace(/(&(?:lt|gt|amp|apos|quot|#(?:\d{1,6}|x[0-9a-fA-F]{1,5}));)/g, str => {
 				if (str[1] === "#") {
-					const code = (str[2] === "x") ? parseInt(str.substr(3), 16) : parseInt(str.substr(2), 10);
+					const code = str[2] === "x" ? Number.parseInt(str.substr(3), 16) : Number.parseInt(str.substr(2), 10);
 					if (code > -1) return String.fromCharCode(code);
 				}
 				return UNESCAPE[str] || str;
 			});
 		}
+	}
 
-	};
-
-	static stringify(json = new Object, tab = "") {
+	static stringify(json = new Object(), tab = "") {
 		const ESCAPE = this.#ESCAPE;
 		const ATTRIBUTE_KEY = this.#ATTRIBUTE_KEY;
 		const CHILD_NODE_KEY = this.#CHILD_NODE_KEY;
 		let XML = "";
-		for (let elem in json) XML += toXml(json[elem], elem, "");
+		for (const elem in json) XML += toXml(json[elem], elem, "");
 		XML = tab ? XML.replace(/\t/g, tab) : XML.replace(/\t|\n/g, "");
 		return XML;
 		/***************** Fuctions *****************/
@@ -345,26 +355,23 @@ export default class XML {
 			switch (typeof Elem) {
 				case "object":
 					if (Array.isArray(Elem)) {
-						xml = Elem.reduce(
-							(prevXML, currXML) => prevXML += `${Ind}${toXml(currXML, Name, `${Ind}\t`)}\n`,
-							""
-						);
+						xml = Elem.reduce((prevXML, currXML) => (prevXML += `${Ind}${toXml(currXML, Name, `${Ind}\t`)}\n`), "");
 					} else {
 						let attribute = "";
 						let hasChild = false;
-						for (let name in Elem) {
+						for (const name in Elem) {
 							if (name[0] === ATTRIBUTE_KEY) {
-								attribute += ` ${name.substring(1)}=\"${Elem[name].toString()}\"`;
+								attribute += ` ${name.substring(1)}="${Elem[name].toString()}"`;
 								delete Elem[name];
 							} else if (Elem[name] === undefined) Name = name;
 							else hasChild = true;
 						}
-						xml += `${Ind}<${Name}${attribute}${(hasChild || Name === "link") ? "" : "/"}>`;
+						xml += `${Ind}<${Name}${attribute}${hasChild || Name === "link" ? "" : "/"}>`;
 
 						if (hasChild) {
 							if (Name === "plist") xml += toPlist(Elem, Name, `${Ind}\t`);
 							else {
-								for (let name in Elem) {
+								for (const name in Elem) {
 									switch (name) {
 										case CHILD_NODE_KEY:
 											xml += Elem[name] ?? "";
@@ -372,12 +379,12 @@ export default class XML {
 										default:
 											xml += toXml(Elem[name], name, `${Ind}\t`);
 											break;
-									};
-								};
-							};
+									}
+								}
+							}
 							xml += (xml.slice(-1) === "\n" ? Ind : "") + `</${Name}>`;
-						};
-					};
+						}
+					}
 					break;
 				case "string":
 					switch (Name) {
@@ -402,14 +409,14 @@ export default class XML {
 						default:
 							xml += `${Ind}<${Name}>${Elem.toString()}</${Name}>`;
 							break;
-					};
+					}
 					break;
 				case "undefined":
 					xml += Ind + `<${Name.toString()}/>`;
 					break;
-			};
+			}
 			return xml;
-		};
+		}
 
 		function toPlist(Elem, Name, Ind) {
 			let plist = "";
@@ -426,7 +433,7 @@ export default class XML {
 				case "string":
 					plist = `${Ind}<string>${Elem.toString()}</string>`;
 					break;
-				case "object":
+				case "object": {
 					let array = "";
 					if (Array.isArray(Elem)) {
 						for (var i = 0, n = Elem.length; i < n; i++) array += `${Ind}${toPlist(Elem[i], Name, `${Ind}\t`)}`;
@@ -438,10 +445,11 @@ export default class XML {
 							dict += toPlist(value, key, Ind);
 						});
 						plist = `${Ind}<dict>${dict}${Ind}</dict>`;
-					};
+					}
 					break;
+				}
 			}
 			return plist;
-		};
-	};
+		}
+	}
 }

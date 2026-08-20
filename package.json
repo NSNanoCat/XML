@@ -25,8 +25,10 @@
 	"main": "XML.mjs",
 	"types": "XML.d.mts",
 	"scripts": {
-		"test": "node --test test/*.test.mjs",
-		"check": "npm test && npm pack --dry-run"
+		"format": "biome format --write XML.mjs XML.d.mts test package.json package-lock.json biome.json",
+		"lint": "biome check XML.mjs XML.d.mts test package.json package-lock.json biome.json",
+		"check": "npm run lint && npm test && npm pack --dry-run",
+		"test": "node --test test/*.test.mjs"
 	},
 	"repository": {
 		"type": "git",
@@ -38,6 +40,9 @@
 		"README.md",
 		"LICENSE"
 	],
+	"devDependencies": {
+		"@biomejs/biome": "2.4.6"
+	},
 	"publishConfig": {
 		"registry": "https://registry.npmjs.org/",
 		"access": "public"
