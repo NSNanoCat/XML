@@ -1,0 +1,45 @@
+{
+	"name": "@nsnanocat/xml",
+	"version": "0.4.2",
+	"description": "XML / JSON converter with plist support for JavaScriptCore and Node.js",
+	"author": "VirgilClyne <Virgil@nanocat.me>",
+	"homepage": "https://github.com/NSNanoCat/XML",
+	"keywords": [
+		"xml",
+		"json",
+		"plist",
+		"parser",
+		"stringify",
+		"surge",
+		"stash",
+		"loon",
+		"quantumult",
+		"shadowrocket",
+		"egern",
+		"jscore",
+		"javascriptcore"
+	],
+	"license": "Apache-2.0",
+	"bugs": "https://github.com/NSNanoCat/XML/issues",
+	"type": "module",
+	"main": "XML.mjs",
+	"types": "XML.d.mts",
+	"scripts": {
+		"test": "node --test test/*.test.mjs",
+		"check": "npm test && npm pack --dry-run"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/NSNanoCat/XML.git"
+	},
+	"files": [
+		"XML.mjs",
+		"XML.d.mts",
+		"README.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"registry": "https://registry.npmjs.org/",
+		"access": "public"
+	}
+}
