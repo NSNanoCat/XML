@@ -361,8 +361,7 @@ export default class XML {
 						let hasChild = false;
 						for (const name in Elem) {
 							if (name[0] === ATTRIBUTE_KEY) {
-								attribute += ` ${name.substring(1)}="${Elem[name].toString()}"`;
-								delete Elem[name];
+								attribute += ` ${name.substring(1)}="${escapeXML(Elem[name] ?? "")}"`;
 							} else if (Elem[name] === undefined) Name = name;
 							else hasChild = true;
 						}
@@ -372,9 +371,10 @@ export default class XML {
 							if (Name === "plist") xml += toPlist(Elem, Name, `${Ind}\t`);
 							else {
 								for (const name in Elem) {
+									if (name[0] === ATTRIBUTE_KEY) continue;
 									switch (name) {
 										case CHILD_NODE_KEY:
-											xml += Elem[name] ?? "";
+											xml += escapeXML(Elem[name] ?? "");
 											break;
 										default:
 											xml += toXml(Elem[name], name, `${Ind}\t`);
@@ -404,10 +404,10 @@ export default class XML {
 							xml += `${Ind}<![CDATA[${Elem.toString()}]]>`;
 							break;
 						case CHILD_NODE_KEY:
-							xml += Elem;
+							xml += escapeXML(Elem);
 							break;
 						default:
-							xml += `${Ind}<${Name}>${Elem.toString()}</${Name}>`;
+							xml += `${Ind}<${Name}>${escapeXML(Elem)}</${Name}>`;
 							break;
 					}
 					break;
@@ -431,7 +431,7 @@ export default class XML {
 					plist = `${Ind}<integer>${Elem.toString()}</integer>`;
 					break;
 				case "string":
-					plist = `${Ind}<string>${Elem.toString()}</string>`;
+					plist = `${Ind}<string>${escapeXML(Elem)}</string>`;
 					break;
 				case "object": {
 					let array = "";
@@ -441,7 +441,7 @@ export default class XML {
 					} else {
 						let dict = "";
 						Object.entries(Elem).forEach(([key, value]) => {
-							dict += `${Ind}<key>${key}</key>`;
+							dict += `${Ind}<key>${escapeXML(key)}</key>`;
 							dict += toPlist(value, key, Ind);
 						});
 						plist = `${Ind}<dict>${dict}${Ind}</dict>`;
@@ -450,6 +450,10 @@ export default class XML {
 				}
 			}
 			return plist;
+		}
+
+		function escapeXML(value) {
+			return String(value).replace(/[&<>"']/g, character => ESCAPE[character]);
 		}
 	}
 }

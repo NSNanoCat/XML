@@ -37,3 +37,19 @@ test("round-trips plist xml", () => {
 	assert.deepEqual(parsed, makePlistFixture());
 	assert.equal(XML.stringify(parsed), xml);
 });
+
+test("escapes serialized text, attributes, and plist strings without mutating input", () => {
+	const value = {
+		root: {
+			"@attribute": `a & < > " '`,
+			"#": `a & < > " '`,
+		},
+		plist: {
+			"a&b": `x & < > " '`,
+		},
+	};
+	const snapshot = structuredClone(value);
+
+	assert.equal(XML.stringify(value), '<root attribute="a &amp; &lt; &gt; &quot; &apos;">a &amp; &lt; &gt; &quot; &apos;</root><plist><dict><key>a&amp;b</key><string>x &amp; &lt; &gt; &quot; &apos;</string></dict></plist>');
+	assert.deepEqual(value, snapshot);
+});
