@@ -2,7 +2,7 @@
 // refer: https://goessner.net/download/prj/jsonxml/
 export default class XML {
 	static name = "XML";
-	static version = "0.4.2";
+	static version = "0.4.3";
 	static about = () => console.log(`\n🟧 ${this.name} v${this.version}\n`);
 
 	static #ATTRIBUTE_KEY = "@";
