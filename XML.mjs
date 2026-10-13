@@ -34,7 +34,7 @@ export default class XML {
 
 		/***************** Fuctions *****************/
 		function toDOM(text) {
-			const list = text.replace(/^[ \t]+/gm, "").split(/<([^!<>?](?:'[\S\s]*?'|"[\S\s]*?"|[^'"<>])*|!(?:--[\S\s]*?--|\[[^[\]'"<>]+\[[\S\s]*?]]|DOCTYPE[^[<>]*?\[[\S\s]*?]|(?:ENTITY[^"<>]*?"[\S\s]*?")?[\S\s]*?)|\?[\S\s]*?\?)>/);
+			const list = text.split(/<([^!<>?](?:'[\S\s]*?'|"[\S\s]*?"|[^'"<>])*|!(?:--[\S\s]*?--|\[[^[\]'"<>]+\[[\S\s]*?]]|DOCTYPE[^[<>]*?\[[\S\s]*?]|(?:ENTITY[^"<>]*?"[\S\s]*?")?[\S\s]*?)|\?[\S\s]*?\?)>/);
 			const length = list.length;
 
 			// root element
@@ -127,14 +127,7 @@ export default class XML {
 			}
 
 			function appendText(str) {
-				//str = removeSpaces(str);
-				str = removeBreakLine(str);
-				//str = str?.trim?.();
-				if (str) appendChild(unescapeXML(str));
-
-				function removeBreakLine(str) {
-					return str?.replace?.(/^(\r\n|\r|\n|\t)+|(\r\n|\r|\n|\t)+$/g, "");
-				}
+				if (elem !== root || str.trim()) appendChild(unescapeXML(str));
 			}
 
 			function appendChild(child) {
@@ -152,7 +145,7 @@ export default class XML {
 				case "object": {
 					//default:
 					const name = elem.name;
-					const children = elem.children;
+					const children = ["plist", "dict", "array"].includes(name) ? elem.children.filter(child => typeof child !== "string" || child.trim()) : elem.children;
 
 					object = {};
 
@@ -242,17 +235,17 @@ export default class XML {
 					else if (!children) object = { [name]: undefined };
 					else object = {};
 
-					if (name === "plist") object = Object.assign(object, fromPlist(children[0], reviver));
-					else
+					if (name === "plist") {
+						const content = children.find(child => typeof child !== "string" || child.trim());
+						object = Object.assign(object, fromPlist(content, reviver));
+					} else
 						children?.forEach?.((child, i) => {
 							const value = fromXML(child, reviver);
 							if (typeof child === "string") {
-								addObject(object, CHILD_NODE_KEY, value, undefined);
-								order.push([CHILD_NODE_KEY, value]);
+								addObject(object, CHILD_NODE_KEY, value, undefined, order);
 							} else {
 								const prevKey = child.raw !== undefined || child.tag || child.children ? undefined : children?.[i - 1]?.name;
-								addObject(object, child.name, value, prevKey);
-								order.push([child.name, value]);
+								addObject(object, child.name, value, prevKey, order);
 							}
 						});
 					if (children && children.length === 0) addObject(object, CHILD_NODE_KEY, null, undefined);
@@ -320,15 +313,16 @@ export default class XML {
 				}
 			}
 
-			function addObject(object, key, val, prevKey = key) {
+			function addObject(object, key, val, prevKey = key, order) {
 				if (typeof val === "undefined") return;
 				else {
 					const hasPrevious = prevKey !== undefined && Object.prototype.hasOwnProperty.call(object, prevKey);
 					const prev = hasPrevious ? object[prevKey] : undefined;
-					//const curr = object[key];
+					const index = Array.isArray(prev) ? prev.length : hasPrevious ? 1 : 0;
 					if (Array.isArray(prev)) prev.push(val);
 					else if (hasPrevious) setObjectValue(object, prevKey, [prev, val]);
 					else setObjectValue(object, key, val);
+					order?.push([hasPrevious ? prevKey : key, index]);
 				}
 
 				function setObjectValue(object, key, value) {
@@ -358,16 +352,33 @@ export default class XML {
 		const ATTRIBUTE_KEY = this.#ATTRIBUTE_KEY;
 		const CHILD_NODE_KEY = this.#CHILD_NODE_KEY;
 		let XML = "";
-		for (const elem of Object.keys(json)) XML += toXml(json[elem], elem, "");
-		XML = tab ? XML.replace(/\t/g, tab) : XML.replace(/\t|\n/g, "");
+		for (const [name, value] of getChildren(json)) XML += toXml(value, name, "");
 		return XML;
 		/***************** Fuctions *****************/
+		function* getChildren(Elem) {
+			const emitted = new Map();
+			for (const [name, index] of Elem[XML_ORDER] ?? []) {
+				if (!Object.prototype.hasOwnProperty.call(Elem, name)) continue;
+				const value = Elem[name];
+				if (Array.isArray(value)) {
+					if (index < value.length) yield [name, value[index]];
+				} else if (index === 0) yield [name, value];
+				emitted.set(name, index + 1);
+			}
+			for (const name of Object.keys(Elem)) {
+				if (name[0] === ATTRIBUTE_KEY) continue;
+				const values = Array.isArray(Elem[name]) ? Elem[name] : [Elem[name]];
+				for (let index = emitted.get(name) ?? 0; index < values.length; index++) yield [name, values[index]];
+			}
+		}
+
 		function toXml(Elem, Name, Ind) {
+			if (Name === CHILD_NODE_KEY) return escapeXML(Elem ?? "");
 			let xml = "";
 			switch (typeof Elem) {
 				case "object":
 					if (Array.isArray(Elem)) {
-						xml = Elem.reduce((prevXML, currXML) => (prevXML += `${Ind}${toXml(currXML, Name, `${Ind}\t`)}\n`), "");
+						xml = Elem.map(value => toXml(value, Name, Ind)).join(tab ? "\n" : "");
 					} else {
 						let attribute = "";
 						let hasChild = false;
@@ -380,26 +391,10 @@ export default class XML {
 						xml += `${Ind}<${Name}${attribute}${hasChild ? "" : "/"}>`;
 
 						if (hasChild) {
-							if (Name === "plist") xml += toPlist(Elem, Name, `${Ind}\t`);
-							else {
-								const order = Elem[XML_ORDER];
-								if (order) {
-									for (const [name, value] of order) xml += toXml(value, name, `${Ind}\t`);
-								} else {
-									for (const name of Object.keys(Elem)) {
-										if (name[0] === ATTRIBUTE_KEY) continue;
-										switch (name) {
-											case CHILD_NODE_KEY:
-												xml += Array.isArray(Elem[name]) ? Elem[name].map(escapeXML).join("") : escapeXML(Elem[name] ?? "");
-												break;
-											default:
-												xml += toXml(Elem[name], name, `${Ind}\t`);
-												break;
-										}
-									}
-								}
-							}
-							xml += (xml.slice(-1) === "\n" ? Ind : "") + `</${Name}>`;
+							const formatted = tab && !Object.prototype.hasOwnProperty.call(Elem, CHILD_NODE_KEY) && !Object.prototype.hasOwnProperty.call(Elem, "!CDATA");
+							const childIndent = formatted ? Ind + tab : "";
+							const children = Name === "plist" ? toPlist(Elem, Name, childIndent) : Array.from(getChildren(Elem), ([name, value]) => toXml(value, name, childIndent)).join(formatted ? "\n" : "");
+							xml += `${formatted && children ? "\n" : ""}${children}${formatted && children ? `\n${Ind}` : ""}</${Name}>`;
 						}
 					}
 					break;
@@ -419,9 +414,6 @@ export default class XML {
 							break;
 						case "!CDATA":
 							xml += `${Ind}<![CDATA[${Elem.toString()}]]>`;
-							break;
-						case CHILD_NODE_KEY:
-							xml += escapeXML(Elem);
 							break;
 						default:
 							xml += `${Ind}<${Name}>${escapeXML(Elem)}</${Name}>`;
@@ -451,18 +443,19 @@ export default class XML {
 					plist = `${Ind}<string>${escapeXML(Elem)}</string>`;
 					break;
 				case "object": {
-					let array = "";
+					const childIndent = Ind + tab;
+					const separator = tab ? "\n" : "";
+					let content, tag;
 					if (Array.isArray(Elem)) {
-						for (var i = 0, n = Elem.length; i < n; i++) array += `${Ind}${toPlist(Elem[i], Name, `${Ind}\t`)}`;
-						plist = `${Ind}<array>${array}${Ind}</array>`;
+						content = Elem.map(value => toPlist(value, Name, childIndent)).join(separator);
+						tag = "array";
 					} else {
-						let dict = "";
-						Object.entries(Elem).forEach(([key, value]) => {
-							dict += `${Ind}<key>${escapeXML(key)}</key>`;
-							dict += toPlist(value, key, Ind);
-						});
-						plist = `${Ind}<dict>${dict}${Ind}</dict>`;
+						content = Object.entries(Elem)
+							.flatMap(([key, value]) => [`${childIndent}<key>${escapeXML(key)}</key>`, toPlist(value, key, childIndent)])
+							.join(separator);
+						tag = "dict";
 					}
+					plist = `${Ind}<${tag}>${content ? `${separator}${content}${separator}${Ind}` : ""}</${tag}>`;
 					break;
 				}
 			}

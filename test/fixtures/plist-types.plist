@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist>
+<dict>
+	<key>title</key>
+	<string>Sage &amp; Vine &lt; &gt; " ' 😀</string>
+	<key>
+ key	</key>
+	<string>
+	 leading
+  middle	
+trailing 	
+</string>
+	<key>whitespace</key>
+	<string> 
+	 </string>
+	<key>literal</key>
+	<string>&amp;#x000A;</string>
+	<key>min</key>
+	<integer>-9223372036854775808</integer>
+	<key>max</key>
+	<integer>9223372036854775807</integer>
+	<key>real</key>
+	<real>-0.000125</real>
+	<key>flags</key>
+	<array>
+		<true/>
+		<false/>
+	</array>
+	<key>nested</key>
+	<dict>
+		<key>array</key>
+		<array>
+			<integer>7</integer>
+			<string>text</string>
+			<dict>
+				<key>constructor</key>
+				<string>value</string>
+				<key>__proto__</key>
+				<string>data</string>
+			</dict>
+		</array>
+	</dict>
+	<key>emptyContainers</key>
+	<dict>
+		<key>dict</key>
+		<dict></dict>
+		<key>array</key>
+		<array></array>
+	</dict>
+</dict>
+</plist>
