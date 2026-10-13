@@ -19,7 +19,7 @@ const makePlistFixture = () => ({
 
 test("exposes package metadata", () => {
 	assert.equal(XML.name, "XML");
-	assert.equal(XML.version, "0.4.4");
+	assert.equal(XML.version, "0.4.5");
 });
 
 test("round-trips ordinary xml", () => {
